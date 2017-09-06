@@ -1,0 +1,159 @@
+ Public Const INPUT_SHEETNAME = "Feuille1" ' you can change input sheet name here
+Sub createOutputSheets()
+    Dim outputSheetNamePrefix As String
+    outputSheetNamePrefix = "OutputSheet-" ' you can change output sheet name prefix here
+    Dim inputWorkSheet As Worksheet
+    Dim outputWorkSheet As Worksheet
+    
+    Dim fullOutputWorkSheet As Worksheet
+    
+    Dim rangeForInputWorkSheet As Range
+    Dim outputSheetNo As Integer
+    Dim totalWidthOfOutputRow As Double
+    Dim outputSheetFullName As String
+    Dim ouputRowColumnCount As Integer
+    
+    Dim fullOuputColumnCount As Integer
+    Dim fullOuputRowCount As Integer
+    
+    Dim maximumFontSize As Integer
+    Dim rgbColor1, rgbColor2, rgbColor3, fontSize As Integer
+    
+    On Error Resume Next
+    Set inputWorkSheet = ThisWorkbook.Sheets(INPUT_SHEETNAME)
+    On Error GoTo 0
+    If inputWorkSheet Is Nothing Then
+        MsgBox ("Input Sheet is not found")
+        End
+    End If
+    
+    Dim exsitingOutputSheet As Worksheet
+    Application.DisplayAlerts = False
+    For Each exsitingOutputSheet In Worksheets
+        If exsitingOutputSheet.Name <> INPUT_SHEETNAME Then exsitingOutputSheet.Delete
+    Next
+    Application.DisplayAlerts = True
+    maximumFontSize = 21 'Default Font Size Can Be Change here
+    outputSheetNo = 1
+    outputSheetFullName = outputSheetNamePrefix & outputSheetNo
+    totalWidthOfOutputRow = 0
+    fullOuputRowColumnCount = 0
+    Sheets.Add.Name = "FullOutputSheet"
+    Sheets.Add.Name = outputSheetFullName
+    Set outputWorkSheet = Worksheets(outputSheetFullName)
+    Set fullOutputWorkSheet = Worksheets("FullOutputSheet")
+    
+    ouputRowColumnCount = 1
+    outputWorkSheet.Cells.ColumnWidth = 15
+    outputWorkSheet.Cells.ShrinkToFit = True
+    outputWorkSheet.Cells.Font.Size = maximumFontSize
+    outputWorkSheet.Cells.HorizontalAlignment = xlCenter
+    With inputWorkSheet.OLEObjects("ComboBox1").Object
+            .Clear
+            .AddItem ("FullOutputSheet")
+        End With
+        inputWorkSheet.OLEObjects("ComboBox1").Object.AddItem (outputSheetFullName)
+    
+    fullOuputColumnCount = 1
+    fullOuputRowCount = 1
+    
+    
+    For Each rangeForInputWorkSheet In inputWorkSheet.Rows
+      If rangeForInputWorkSheet.Row > 1 Then
+        If inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 1).Value = "" Then
+          Exit For
+        End If
+        
+        rgbColor1 = CInt(Split(Split((inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 2).Value), ",")(0), "(")(1))
+        rgbColor2 = CInt(Split((inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 2).Value), ",")(1))
+        rgbColor3 = CInt(Split(Split((inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 2).Value), ",")(2), ")")(0))
+          
+        outputWorkSheet.Cells(1, ouputRowColumnCount).Font.Color = RGB(rgbColor1, rgbColor2, rgbColor3)
+        outputWorkSheet.Cells(1, ouputRowColumnCount).Font.Name = inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 3).Value
+        outputWorkSheet.Cells(1, ouputRowColumnCount).Value = inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 1).Value
+        
+        'Code for full Outputsheet
+        fullOutputWorkSheet.Cells(fullOuputRowCount, fullOuputColumnCount).Font.Color = RGB(rgbColor1, rgbColor2, rgbColor3)
+        fullOutputWorkSheet.Cells(fullOuputRowCount, fullOuputColumnCount).Font.Name = inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 3).Value
+        fullOutputWorkSheet.Cells(fullOuputRowCount, fullOuputColumnCount).Value = inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 1).Value
+        If fullOuputColumnCount = 5 Then
+            fullOuputColumnCount = 0
+            fullOuputRowCount = fullOuputRowCount + 1
+        End If
+        fullOuputColumnCount = fullOuputColumnCount + 1
+        fullOutputWorkSheet.Cells.ColumnWidth = 15
+        fullOutputWorkSheet.Cells.ShrinkToFit = True
+        fullOutputWorkSheet.Cells.Font.Size = maximumFontSize
+        fullOutputWorkSheet.Cells.HorizontalAlignment = xlCenter
+         'Code for full Outputsheet Ends
+         
+        totalWidthOfOutputRow = totalWidthOfOutputRow + (outputWorkSheet.Cells(1, ouputRowColumnCount).Width * 0.35)
+        
+        If totalWidthOfOutputRow > 700 Then
+        
+          outputWorkSheet.Cells(1, ouputRowColumnCount).Value = ""
+          outputSheetNo = outputSheetNo + 1
+          outputSheetFullName = outputSheetNamePrefix & outputSheetNo
+          inputWorkSheet.OLEObjects("ComboBox1").Object.AddItem (outputSheetFullName)
+          Sheets.Add.Name = outputSheetFullName
+          Set outputWorkSheet = Worksheets(outputSheetFullName)
+          ouputRowColumnCount = 1
+          
+          outputWorkSheet.Cells(1, ouputRowColumnCount).Font.Color = RGB(rgbColor1, rgbColor2, rgbColor3)
+          outputWorkSheet.Cells(1, ouputRowColumnCount).Font.Name = inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 3).Value
+          outputWorkSheet.Cells(1, ouputRowColumnCount).Value = inputWorkSheet.Cells(rangeForInputWorkSheet.Row, 1).Value
+          totalWidthOfOutputRow = (outputWorkSheet.Cells(1, ouputRowColumnCount).Width * 0.35)
+          outputWorkSheet.Cells.ColumnWidth = 15
+          outputWorkSheet.Cells.ShrinkToFit = True
+          outputWorkSheet.Cells.Font.Size = maximumFontSize
+          outputWorkSheet.Cells.HorizontalAlignment = xlCenter
+        End If
+        
+         ouputRowColumnCount = ouputRowColumnCount + 1
+       End If
+    Next rangeForInputWorkSheet
+    
+    inputWorkSheet.OLEObjects("ComboBox1").Object.Style = 2
+    inputWorkSheet.OLEObjects("ComboBox1").Object.ListIndex = 0
+End Sub
+
+Sub PDFOutputSheet()
+Dim ws As Worksheet
+Dim strPath As String
+Dim myFile As Variant
+Dim strFile As String
+On Error GoTo errHandler
+
+Set ws = ThisWorkbook.Sheets(ThisWorkbook.Sheets(INPUT_SHEETNAME).OLEObjects("ComboBox1").Object.Value)
+
+'enter name and select folder for file
+' start in current workbook folder
+strFile = Replace(Replace(ws.Name, " ", ""), ".", "_") _
+            & "_" _
+            & Format(Now(), "yyyymmdd\_hhmm") _
+            & ".pdf"
+strFile = ThisWorkbook.Path & "\" & strFile
+
+myFile = Application.GetSaveAsFilename _
+    (InitialFileName:=strFile, _
+        FileFilter:="PDF Files (*.pdf), *.pdf", _
+        Title:="Select Folder and FileName to save")
+
+If myFile <> "False" Then
+    ws.ExportAsFixedFormat _
+        Type:=xlTypePDF, _
+        Filename:=myFile, _
+        Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, _
+        IgnorePrintAreas:=False, _
+        OpenAfterPublish:=False
+
+    MsgBox "PDF file has been created."
+End If
+
+exitHandler:
+    Exit Sub
+errHandler:
+    MsgBox "Could not create PDF file"
+    Resume exitHandler
+End Sub
